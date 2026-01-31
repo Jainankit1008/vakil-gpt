@@ -1,0 +1,31 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// "Customer" Model (formerly User)
+model Customer {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique  // This acts as the Customer ID for now
+  name      String?
+  questions Question[]        // A customer can ask many questions
+}
+
+// "Question" Model (formerly Chat)
+model Question {
+  id         Int      @id @default(autoincrement())
+  text       String   // The actual question
+  aiResponse String?  // Optional: We can store the AI's answer too
+  timestamp  DateTime @default(now()) // "Time for a record"
+  
+  // Link to the Customer
+  customer   Customer @relation(fields: [customerId], references: [id])
+  customerId Int
+}
