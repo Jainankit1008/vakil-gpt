@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vakil_GPT | Legal AI Assistant</title>
+    <title>Vakil_GPT | Voice Enabled</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     
     <style>
-        /* --- 1. THEME & RESET --- */
+        /* --- 1. THEME --- */
         :root {
-            --primary: #1e3a8a; /* Royal Navy Blue */
-            --accent: #3b82f6;  /* Bright Blue */
-            --bg: #f3f4f6;      /* Light Gray Background */
+            --primary: #1e3a8a; 
+            --accent: #3b82f6;  
+            --bg: #f3f4f6;      
             --chat-bg: #ffffff;
             --user-msg-bg: #1e3a8a;
             --bot-msg-bg: #f1f5f9;
@@ -34,7 +34,6 @@
             padding: 1rem;
             text-align: center;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            flex-shrink: 0;
         }
         header h1 { font-size: 1.5rem; font-weight: 600; }
         header p { font-size: 0.8rem; opacity: 0.8; margin-top: 5px; }
@@ -43,7 +42,7 @@
         #chat-container {
             flex-grow: 1;
             padding: 1.5rem;
-            overflow-y: auto; /* Allows scrolling */
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 1rem;
@@ -52,44 +51,26 @@
             width: 100%;
         }
 
-        /* --- 4. MESSAGE BUBBLES --- */
         .message {
             max-width: 80%;
             padding: 1rem;
             border-radius: 12px;
             line-height: 1.5;
             font-size: 0.95rem;
-            position: relative;
             animation: fadeIn 0.3s ease;
         }
 
-        /* User Bubble (Right) */
-        .user {
-            align-self: flex-end;
-            background-color: var(--user-msg-bg);
-            color: white;
-            border-bottom-right-radius: 2px;
-        }
-
-        /* Bot Bubble (Left) */
-        .bot {
-            align-self: flex-start;
-            background-color: var(--bot-msg-bg);
-            color: #1f2937;
-            border-bottom-left-radius: 2px;
-            border: 1px solid #e5e7eb;
-        }
-
+        .user { align-self: flex-end; background-color: var(--user-msg-bg); color: white; border-bottom-right-radius: 2px; }
+        .bot { align-self: flex-start; background-color: var(--bot-msg-bg); color: #1f2937; border-bottom-left-radius: 2px; border: 1px solid #e5e7eb; }
         .bot strong { color: var(--primary); display: block; margin-bottom: 5px; font-size: 0.8rem; }
 
-        /* --- 5. INPUT AREA --- */
+        /* --- 4. INPUT AREA (Updated for Mic) --- */
         .input-area {
             background: white;
             padding: 1rem;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
             display: flex;
             justify-content: center;
-            flex-shrink: 0;
         }
 
         .input-wrapper {
@@ -97,21 +78,37 @@
             width: 100%;
             max-width: 800px;
             gap: 10px;
+            position: relative;
         }
 
         input {
             flex-grow: 1;
             padding: 0.8rem 1rem;
+            padding-right: 3rem; /* Space for mic icon */
             border: 2px solid #e5e7eb;
             border-radius: 8px;
             font-size: 1rem;
-            transition: border-color 0.2s;
             outline: none;
         }
-
         input:focus { border-color: var(--accent); }
 
-        button {
+        /* MIC BUTTON STYLE */
+        #micBtn {
+            position: absolute;
+            right: 100px; /* Position inside input but before Send button */
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: #6b7280;
+            transition: color 0.2s;
+        }
+        #micBtn:hover { color: var(--primary); }
+        #micBtn.listening { color: red; animation: pulse 1s infinite; }
+
+        button#sendBtn {
             padding: 0 1.5rem;
             background-color: var(--primary);
             color: white;
@@ -119,36 +116,27 @@
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
         }
 
-        button:hover { background-color: var(--accent); }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
-
-        /* --- 6. LOADING DOTS --- */
         .typing-indicator {
-            display: none; /* Hidden by default */
-            font-size: 0.8rem;
-            color: #6b7280;
-            margin-left: 10px;
-            margin-bottom: 10px;
+            font-size: 0.8rem; color: #6b7280; margin-left: 10px; margin-bottom: 10px; display: none;
         }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0% { transform: translateY(-50%) scale(1); } 50% { transform: translateY(-50%) scale(1.2); } 100% { transform: translateY(-50%) scale(1); } }
     </style>
 </head>
 <body>
 
     <header>
         <h1>⚖️ Vakil_GPT</h1>
-        <p>Your AI Legal Companion (Powered by Indian Law)</p>
+        <p>AI Legal Assistant (Voice Enabled 🎙️)</p>
     </header>
 
     <div id="chat-container">
         <div class="message bot">
             <strong>Vakil_GPT</strong>
-            Namaste! I am your legal assistant. You can ask me about IPC, CrPC, or general legal advice. <br><br>
-            <em>Example: "What is the punishment for online fraud?"</em>
+            Namaste! You can type your question or click the microphone 🎙️ to speak.
         </div>
     </div>
 
@@ -156,7 +144,10 @@
 
     <div class="input-area">
         <div class="input-wrapper">
-            <input type="text" id="userInput" placeholder="Type your legal question here..." onkeypress="handleEnter(event)">
+            <input type="text" id="userInput" placeholder="Type or speak your question..." onkeypress="handleEnter(event)">
+            
+            <button id="micBtn" onclick="toggleVoice()" title="Speak">🎙️</button>
+            
             <button onclick="sendMessage()" id="sendBtn">Send</button>
         </div>
     </div>
@@ -165,9 +156,51 @@
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('userInput');
         const loader = document.getElementById('loader');
-        const sendBtn = document.getElementById('sendBtn');
+        const micBtn = document.getElementById('micBtn');
 
-        // Allow pressing "Enter" to send
+        // --- VOICE RECOGNITION SETUP ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false; // Stop after one sentence
+            recognition.lang = 'en-IN'; // Indian English
+            recognition.interimResults = false;
+
+            recognition.onstart = function() {
+                micBtn.classList.add("listening");
+                userInput.placeholder = "Listening... Speak now";
+            };
+
+            recognition.onend = function() {
+                micBtn.classList.remove("listening");
+                userInput.placeholder = "Type or speak your question...";
+                // Auto send if text was captured
+                if (userInput.value.trim() !== "") {
+                    sendMessage();
+                }
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                userInput.value = transcript;
+            };
+        } else {
+            micBtn.style.display = 'none'; // Hide mic if browser doesn't support it
+            console.log("Web Speech API not supported in this browser.");
+        }
+
+        function toggleVoice() {
+            if (micBtn.classList.contains("listening")) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+            userInput.focus();
+        }
+
+        // --- STANDARD CHAT FUNCTIONS ---
         function handleEnter(e) {
             if (e.key === 'Enter') sendMessage();
         }
@@ -180,34 +213,21 @@
             const question = userInput.value.trim();
             if (!question) return;
 
-            // 1. Disable input while waiting
             userInput.value = '';
             userInput.disabled = true;
-            sendBtn.disabled = true;
             loader.style.display = 'block';
 
-            // 2. Add User Message
-            chatContainer.innerHTML += `
-                <div class="message user">
-                    ${question}
-                </div>`;
+            chatContainer.innerHTML += `<div class="message user">${question}</div>`;
             scrollToBottom();
 
             try {
-                // 3. Send to Server
                 const response = await fetch('/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        email: "test@vakilgpt.com", 
-                        message: question 
-                    })
+                    body: JSON.stringify({ email: "test@vakilgpt.com", message: question })
                 });
 
                 const data = await response.json();
-
-                // 4. Add AI Message
-                // Format the text: Replace newlines with <br> for better reading
                 const formattedReply = data.reply.replace(/\n/g, '<br>');
                 
                 chatContainer.innerHTML += `
@@ -217,15 +237,9 @@
                     </div>`;
 
             } catch (error) {
-                chatContainer.innerHTML += `
-                    <div class="message bot" style="color: red;">
-                        <strong>System Error</strong>
-                        Failed to reach the server. Please try again.
-                    </div>`;
+                chatContainer.innerHTML += `<div class="message bot" style="color:red;">Error connecting to server.</div>`;
             } finally {
-                // 5. Reset UI
                 userInput.disabled = false;
-                sendBtn.disabled = false;
                 loader.style.display = 'none';
                 userInput.focus();
                 scrollToBottom();
