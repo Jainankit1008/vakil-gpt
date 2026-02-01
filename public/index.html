@@ -151,8 +151,7 @@
             <button onclick="sendMessage()" id="sendBtn">Send</button>
         </div>
     </div>
-
-    <script>
+<script>
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('userInput');
         const loader = document.getElementById('loader');
@@ -164,8 +163,8 @@
 
         if (SpeechRecognition) {
             recognition = new SpeechRecognition();
-            recognition.continuous = false; // Stop after one sentence
-            recognition.lang = 'en-IN'; // Indian English
+            recognition.continuous = false; 
+            recognition.lang = 'en-IN'; 
             recognition.interimResults = false;
 
             recognition.onstart = function() {
@@ -173,22 +172,23 @@
                 userInput.placeholder = "Listening... Speak now";
             };
 
+            // --- CHANGED HERE: We removed the Auto-Send code ---
             recognition.onend = function() {
                 micBtn.classList.remove("listening");
                 userInput.placeholder = "Type or speak your question...";
-                // Auto send if text was captured
-                if (userInput.value.trim() !== "") {
-                    sendMessage();
-                }
+                userInput.focus(); // Focus so user can edit immediately
             };
 
             recognition.onresult = function(event) {
                 const transcript = event.results[0][0].transcript;
-                userInput.value = transcript;
+                
+                // Append text instead of replacing (optional, but good for long queries)
+                // If you want to replace, use: userInput.value = transcript;
+                userInput.value = transcript; 
             };
         } else {
-            micBtn.style.display = 'none'; // Hide mic if browser doesn't support it
-            console.log("Web Speech API not supported in this browser.");
+            micBtn.style.display = 'none'; 
+            console.log("Web Speech API not supported.");
         }
 
         function toggleVoice() {
@@ -197,7 +197,6 @@
             } else {
                 recognition.start();
             }
-            userInput.focus();
         }
 
         // --- STANDARD CHAT FUNCTIONS ---
