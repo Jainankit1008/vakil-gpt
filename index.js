@@ -100,6 +100,57 @@ app.post('/chat', async (req, res) => {
     }
 });
 const PORT = 3000;
+// --- ADMIN ROUTE (View All Data) ---
+app.get('/admin', async (req, res) => {
+    try {
+        // 1. Fetch all questions from DB, newest first
+        const history = await prisma.question.findMany({
+            orderBy: { timestamp: 'desc' },
+            include: { customer: true } // Get the user's email too
+        });
+
+        // 2. Generate simple HTML Table
+        let html = `
+            <html>
+            <head>
+                <title>Admin Dashboard</title>
+                <style>
+                    body { font-family: sans-serif; padding: 2rem; background: #f3f4f6; }
+                    table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+                    th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
+                    th { background: #1e3a8a; color: white; }
+                    tr:hover { background: #f9fafb; }
+                    h1 { color: #1e3a8a; }
+                </style>
+            </head>
+            <body>
+                <h1>📊 Vakil_GPT Live Records</h1>
+                <table>
+                    <tr>
+                        <th>Time</th>
+                        <th>User (Email)</th>
+                        <th>Question</th>
+                        <th>AI Response</th>
+                    </tr>
+                    ${history.map(item => `
+                        <tr>
+                            <td>${new Date(item.timestamp).toLocaleString()}</td>
+                            <td>${item.customer.email}</td>
+                            <td>${item.text}</td>
+                            <td>${item.aiResponse ? item.aiResponse.substring(0, 50) + '...' : 'No Answer'}</td>
+                        </tr>
+                    `).join('')}
+                </table>
+            </body>
+            </html>
+        `;
+
+        res.send(html);
+
+    } catch (e) {
+        res.status(500).send("Error loading admin panel: " + e.message);
+    }
+});
 app.listen(PORT, () => {
     console.log(`🚀 Vakil_GPT (Groq Edition) is LIVE at http://localhost:${PORT}`);
 });
