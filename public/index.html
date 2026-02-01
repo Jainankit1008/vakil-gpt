@@ -182,9 +182,14 @@
             recognition.onresult = function(event) {
                 const transcript = event.results[0][0].transcript;
                 
-                // Append text instead of replacing (optional, but good for long queries)
-                // If you want to replace, use: userInput.value = transcript;
-                userInput.value = transcript; 
+                // --- GOOGLE ASSISTANT STYLE FIX ---
+                // If there is already text, add a space and then the new words.
+                // If it's empty, just add the new words.
+                if (userInput.value.trim() === "") {
+                    userInput.value = transcript;
+                } else {
+                    userInput.value = userInput.value + " " + transcript;
+                }
             };
         } else {
             micBtn.style.display = 'none'; 
