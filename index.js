@@ -102,7 +102,12 @@ app.post('/chat', async (req, res) => {
 const PORT = 3000;
 // --- ADMIN ROUTE (View All Data) ---
 app.get('/admin', async (req, res) => {
-    try {
+    // --- 🔒 SECURITY GUARD ---
+    // User must visit /admin?password=123 to see data
+    const password = req.query.password;
+    if (password !== "secret123") { // Change "secret123" to whatever you want
+        return res.send("<h1>⛔ Access Denied</h1><p>You are not the admin.</p>");
+    }    try {
         // 1. Fetch all questions from DB, newest first
         const history = await prisma.question.findMany({
             orderBy: { timestamp: 'desc' },
