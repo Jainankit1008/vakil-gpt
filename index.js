@@ -2,19 +2,15 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
-import 'dotenv/config'; // <--- ADD THIS LINE (Loads the .env file)
+import 'dotenv/config'; // Loads the .env file
+
+// --- NEW MULTI-AGENT SETUP ---
+// We import the compiled LangGraph workflow from our agent.js file
+import { app as agenticWorkflow } from './agent.js';
 
 const require = createRequire(import.meta.url);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// --- AI SETUP ---
-const Groq = require("groq-sdk");
-
-// CHANGE THIS LINE: Use process.env instead of the real key
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY }); 
-
-// ... rest of your code ...
 
 // --- DATABASE SETUP ---
 const { PrismaClient } = require('@prisma/client');
@@ -23,8 +19,10 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- THE CHAT ROUTE ---
-// --- FIXED CHAT ROUTE ---
+
+// ==========================================
+// 💬 THE CORE CHAT ROUTE
+// ==========================================
 app.post('/chat', async (req, res) => {
     const { email, message } = req.body;
     
@@ -37,77 +35,72 @@ app.post('/chat', async (req, res) => {
     console.log(`📩 User asked: "${message}"`);
 
     try {
-        // 2. ASK GROQ (Using the Latest Stable Model)
-        // We use 'llama-3.3-70b-versatile' which is currently the most reliable.
-        const completion = await groq.chat.completions.create({
-            messages: [
-                {
-                    role: "system",
-                    content: "You are Vakil_GPT, an expert Indian Lawyer. Answer queries using Indian Laws (IPC/BNS) in simple English."
-                },
-                {
-                    role: "user",
-                    content: message
-                }
-            ],
-            // Switch to this model ID, it is less likely to error out
-            model: "llama-3.3-70b-versatile", 
+        // 2. TRIGGER THE LANGGRAPH MULTI-AGENT WORKFLOW
+        // Instead of calling Groq directly, we pass the query to our StateGraph
+        console.log("🚀 Starting Agentic Workflow...");
+        
+        const finalState = await agenticWorkflow.invoke({
+            userQuery: message,
+            isApproved: false // Initializing the state
         });
 
-        const aiText = completion.choices[0]?.message?.content || "No answer generated.";
+        // Extract the final approved answer from the graph's state
+        const aiText = finalState.finalResponse || "No answer generated.";
         console.log(`🤖 AI Answered: "${aiText.substring(0, 50)}..."`);
 
         // 3. SAVE TO DATABASE
         // (We wrap this in a try/catch so DB errors don't crash the AI response)
         try {
-    await prisma.customer.upsert({
-        where: { email: email },
-        update: {
-            // Add the new question to existing customer
-            questions: { 
-                create: { 
-                    text: message,
-                    aiResponse: aiText 
-                } 
-            }
-        },
-        create: {
-            email: email,
-            name: "New Customer",
-            // Create customer AND their first question
-            questions: { 
-                create: { 
-                    text: message,
-                    aiResponse: aiText 
-                } 
-            }
+            await prisma.customer.upsert({
+                where: { email: email },
+                update: {
+                    questions: { 
+                        create: { 
+                            text: message,
+                            aiResponse: aiText 
+                        } 
+                    }
+                },
+                create: {
+                    email: email,
+                    name: "New Customer",
+                    questions: { 
+                        create: { 
+                            text: message,
+                            aiResponse: aiText 
+                        } 
+                    }
+                }
+            });
+        } catch (dbError) {
+            console.error("⚠️ Database Error:", dbError.message);
         }
-    });
-} catch (dbError) {
-    console.error("⚠️ Database Error:", dbError.message);
-}
 
-        // 4. SEND RESPONSE
+        // 4. SEND RESPONSE TO FRONTEND
         res.json({ reply: aiText });
 
     } catch (e) {
         // 5. DEEP DEBUGGING LOG
-        // This will print the EXACT reason why Groq is rejecting the request
-        console.error("❌ Groq API Error:", e.message);
+        console.error("❌ Workflow Error:", e.message);
         if (e.error) console.error("Details:", JSON.stringify(e.error, null, 2));
         
-        res.status(500).json({ reply: "Error: " + e.message });
+        res.status(500).json({ reply: "Error processing the workflow: " + e.message });
     }
 });
+
 const PORT = 3000;
-// --- ADMIN ROUTE (View All Data) ---
+
+// ==========================================
+// 🔒 ADMIN ROUTE (View All Data)
+// ==========================================
 app.get('/admin', async (req, res) => {
-    // --- 🔒 SECURITY GUARD ---
-    // User must visit /admin?password=123 to see data
+    // User must visit /admin?password=secret123 to see data
     const password = req.query.password;
-    if (password !== "secret123") { // Change "secret123" to whatever you want
+    if (password !== "secret123") { 
         return res.send("<h1>⛔ Access Denied</h1><p>You are not the admin.</p>");
-    }    try {
+    }    
+    
+    try {
         // 1. Fetch all questions from DB, newest first
         const history = await prisma.question.findMany({
             orderBy: { timestamp: 'desc' },
@@ -156,6 +149,7 @@ app.get('/admin', async (req, res) => {
         res.status(500).send("Error loading admin panel: " + e.message);
     }
 });
+
 app.listen(PORT, () => {
-    console.log(`🚀 Vakil_GPT (Groq Edition) is LIVE at http://localhost:${PORT}`);
+    console.log(`🚀 Vakil_GPT (Agentic Edition) is LIVE at http://localhost:${PORT}`);
 });

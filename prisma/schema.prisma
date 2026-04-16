@@ -4,11 +4,13 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Changed from postgresql to sqlite
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
+
+// ... keep your Customer and Question models exactly the same below this ...
 
 // "Customer" Model (formerly User)
 model Customer {
